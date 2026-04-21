@@ -1,0 +1,27 @@
+<!-- UC Job Logger — Floating Panel Markup
+     This file is fetched by content.js and injected into a shadow DOM.
+     It must be a single root element (the outer <div>) — no doctype or <html>.
+     All interactivity is wired up in content.js after injection. -->
+
+<div id="uc-logger-panel">
+
+  <!-- ── Header bar (always visible, even when collapsed) ─────────────── -->
+  <div class="panel-header">
+    <span class="panel-title">Job Logger</span>
+    <div class="panel-header-actions">
+      <!-- Refresh re-fetches the Google Sheet -->
+      <button id="refresh-btn" class="icon-btn" title="Refresh from sheet">&#8635;</button>
+      <!-- Toggle collapses/expands the panel body -->
+      <button id="panel-toggle" class="icon-btn" title="Collapse / expand">&#8722;</button>
+    </div>
+  </div>
+
+  <!-- ── Body (hidden when collapsed) ────────────────────────────────── -->
+  <div id="panel-body" class="panel-body">
+    <p class="panel-subtitle">Last 10 applications from your sheet</p>
+
+    <!-- Application cards are rendered here by content.js -->
+    <div id="cards-container" class="cards-container"></div>
+  </div>
+
+</div>

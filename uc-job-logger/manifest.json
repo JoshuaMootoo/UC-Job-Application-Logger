@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "UC Job Application Logger",
+  "version": "1.0.0",
+  "description": "Quickly log job applications to your Universal Credit journal from a Google Sheet.",
+
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://*.universal-credit.service.gov.uk/*",
+    "https://sheets.googleapis.com/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.universal-credit.service.gov.uk/*"],
+      "js": ["config.js", "selectors.js", "sheets.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["panel.html", "panel.css"],
+      "matches": ["*://*.universal-credit.service.gov.uk/*"]
+    }
+  ],
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
