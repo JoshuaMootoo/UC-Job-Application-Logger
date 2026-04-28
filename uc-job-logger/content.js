@@ -89,7 +89,27 @@
       cardsContainer.innerHTML = '<p class="status-msg">No applications found.</p>';
       return;
     }
-    apps.forEach(app => cardsContainer.appendChild(buildCard(app)));
+    const matchIdx = findMatchingAppIndex(apps);
+    apps.forEach((app, i) => {
+      const card = buildCard(app);
+      if (i === matchIdx) {
+        card.classList.add('card-matched');
+        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+      }
+      cardsContainer.appendChild(card);
+    });
+  }
+
+  // Checks whether any UC form field already contains a value that matches an
+  // application in the sheet. Returns the index in apps[], or -1 if no match.
+  function findMatchingAppIndex(apps) {
+    const pageEmployer = (document.getElementById(SELECTORS.employer)?.value || '').trim().toLowerCase();
+    const pageJobTitle = (document.getElementById(SELECTORS.jobTitle)?.value || '').trim().toLowerCase();
+    if (!pageEmployer && !pageJobTitle) return -1;
+    return apps.findIndex(app =>
+      (pageEmployer && app.employer.toLowerCase() === pageEmployer) ||
+      (pageJobTitle && app.jobTitle.toLowerCase()  === pageJobTitle)
+    );
   }
 
   // Builds one application card DOM element.
@@ -137,8 +157,10 @@
       })
     );
 
-    let selectedStatus = null;
+    // Pre-select whatever status is already stored in the sheet for this row.
+    let selectedStatus = app.status ? app.status.toUpperCase() : null;
     card.querySelectorAll('.status-btn').forEach(btn => {
+      if (btn.dataset.status === selectedStatus) btn.classList.add('active');
       btn.addEventListener('click', () => {
         card.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -167,8 +189,15 @@
 
     if (filled === 0) {
       showToast('No fields found — update selectors.js', true);
-    } else {
-      showToast(`Auto-filled ${filled} field${filled !== 1 ? 's' : ''}`);
+      return;
+    }
+    showToast(`Auto-filled ${filled} field${filled !== 1 ? 's' : ''}`);
+
+    // Write the status back to column F of the sheet row asynchronously.
+    if (status && app.sheetRow) {
+      updateApplicationStatus(app.sheetRow, status)
+        .then(() => showToast('Status saved to sheet'))
+        .catch(err => showToast(`Sheet update failed: ${err.message}`, true));
     }
   }
 
