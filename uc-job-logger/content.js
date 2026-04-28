@@ -122,6 +122,11 @@
         <button class="copy-btn" data-copy="${escAttr(app.jobUrl)}"
                 title="Copy job URL (for the Notes field)">Copy</button>
       </div>
+      <div class="status-row">
+        <button class="status-btn" data-status="APPLIED">Applied</button>
+        <button class="status-btn" data-status="SUCCESSFUL">Successful</button>
+        <button class="status-btn" data-status="UNSUCCESSFUL">Unsuccessful</button>
+      </div>
       <button class="autofill-btn">Auto-fill form</button>
     `;
 
@@ -132,13 +137,22 @@
       })
     );
 
-    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app));
+    let selectedStatus = null;
+    card.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        card.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedStatus = btn.dataset.status;
+      });
+    });
+
+    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, selectedStatus));
 
     return card;
   }
 
   // ── 6. Auto-fill ────────────────────────────────────────────────────────
-  function autoFill(app) {
+  function autoFill(app, status) {
     // The sheet stores the date as DD/MM/YYYY; split it for the three UC inputs
     const [day, month, year] = app.date.split('/');
 
@@ -149,12 +163,24 @@
     filled += setField(SELECTORS.monthInput, month || '');
     filled += setField(SELECTORS.yearInput,  year  || '');
     filled += setField(SELECTORS.notes,      app.jobUrl);
+    filled += setStatus(status);
 
     if (filled === 0) {
       showToast('No fields found — update selectors.js', true);
     } else {
       showToast(`Auto-filled ${filled} field${filled !== 1 ? 's' : ''}`);
     }
+  }
+
+  // Checks the job-status radio button on the UC page (Applied/Successful/Unsuccessful).
+  function setStatus(status) {
+    if (!status) return 0;
+    const radio = document.getElementById(`clickable-${status}`);
+    if (!radio) return 0;
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    radio.dispatchEvent(new Event('click',  { bubbles: true }));
+    return 1;
   }
 
   // Writes a value to a form field identified by its element ID.
