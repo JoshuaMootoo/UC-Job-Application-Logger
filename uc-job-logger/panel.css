@@ -117,6 +117,41 @@
   border-bottom-color: #6ee7b7;
 }
 
+/* ── Universal status button ─────────────────────────────────────────────── */
+.universal-bar {
+  padding: 8px 8px 0;
+}
+
+.universal-set-btn {
+  display: block;
+  width: 100%;
+  padding: 7px;
+  border: none;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.universal-set-btn[data-tab="UNSUCCESSFUL"] {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.universal-set-btn[data-tab="UNSUCCESSFUL"]:hover {
+  background: #991b1b;
+}
+
+.universal-set-btn[data-tab="SUCCESSFUL"] {
+  background: #14532d;
+  color: #86efac;
+}
+
+.universal-set-btn[data-tab="SUCCESSFUL"]:hover {
+  background: #166534;
+}
+
 /* ── Cards container ─────────────────────────────────────────────────────── */
 .cards-container {
   padding: 8px;
@@ -270,6 +305,54 @@
   background: #3a1e1e;
   border-color: #f87171;
   color: #f87171;
+}
+
+/* ── Simple card (Successful / Unsuccessful tabs) ────────────────────────── */
+.app-card--simple {
+  padding: 8px 10px;
+}
+
+.simple-employer {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9d1e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
+.simple-jobtitle {
+  font-size: 11px;
+  color: #8b95b0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 6px;
+}
+
+.find-btn {
+  display: block;
+  width: 100%;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid #3a3a58;
+  border-radius: 4px;
+  color: #8b95b0;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.find-btn:hover {
+  background: #2e2e4a;
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+/* Utility — hides any element */
+.hidden {
+  display: none !important;
 }
 
 /* Auto-fill button — full width, prominent */
