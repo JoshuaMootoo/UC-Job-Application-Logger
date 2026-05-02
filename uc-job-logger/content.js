@@ -23,8 +23,10 @@
   host.id = 'uc-job-logger-host';
   Object.assign(host.style, {
     position:   'fixed',
-    bottom:     '20px',
-    right:      '20px',
+    top:        '0',
+    bottom:     '0',
+    right:      '0',
+    width:      '310px',
     zIndex:     '2147483647',
     lineHeight: 'initial',
     fontFamily: 'initial',
@@ -46,12 +48,14 @@
   shadow.appendChild(tpl.firstElementChild);
 
   // ── 2. Cache frequently-used element references ─────────────────────────
-  const panel          = shadow.getElementById('uc-logger-panel');
-  const panelBody      = shadow.getElementById('panel-body');
-  const toggleBtn      = shadow.getElementById('panel-toggle');
-  const refreshBtn     = shadow.getElementById('refresh-btn');
-  const cardsContainer = shadow.getElementById('cards-container');
-  const tabBtns        = shadow.querySelectorAll('.tab-btn');
+  const panel           = shadow.getElementById('uc-logger-panel');
+  const panelBody       = shadow.getElementById('panel-body');
+  const toggleBtn       = shadow.getElementById('panel-toggle');
+  const refreshBtn      = shadow.getElementById('refresh-btn');
+  const cardsContainer  = shadow.getElementById('cards-container');
+  const tabBtns         = shadow.querySelectorAll('.tab-btn');
+  const universalBar    = shadow.getElementById('universal-bar');
+  const universalSetBtn = shadow.getElementById('universal-set-btn');
 
   // All fetched applications — shared across tab renders without re-fetching.
   let allApps   = [];
@@ -73,14 +77,39 @@
     chrome.storage.local.set({ panelCollapsed: nowCollapsed });
   });
 
-  // ── 4. Tabs ─────────────────────────────────────────────────────────────
+  // ── 4. Tabs & universal button ──────────────────────────────────────────
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeTab = btn.dataset.tab;
+      updateUniversalBar();
       renderCards();
     });
+  });
+
+  function updateUniversalBar() {
+    if (activeTab === 'APPLIED') {
+      universalBar.classList.add('hidden');
+      return;
+    }
+    universalBar.classList.remove('hidden');
+    const label = activeTab === 'SUCCESSFUL' ? 'Successful' : 'Unsuccessful';
+    universalSetBtn.textContent  = `Set as ${label} on this page`;
+    universalSetBtn.dataset.tab  = activeTab;
+  }
+
+  // Clicks the matching radio on the UC page for the current tab's status.
+  universalSetBtn.addEventListener('click', () => {
+    const radio = document.getElementById(`clickable-${activeTab}`);
+    if (!radio) {
+      showToast('Status button not found on this page', true);
+      return;
+    }
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+    radio.dispatchEvent(new Event('click',  { bubbles: true }));
+    showToast(`Set as ${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`);
   });
 
   // ── 5. Refresh ──────────────────────────────────────────────────────────
@@ -139,13 +168,16 @@
     );
   }
 
-  // Builds one application card DOM element.
+  // Dispatches to the correct card builder based on the active tab.
   function buildCard(app) {
+    return activeTab === 'APPLIED' ? buildFullCard(app) : buildSimpleCard(app);
+  }
+
+  // Full card for the Applied tab — date, employer, job, URL, status picker, auto-fill.
+  function buildFullCard(app) {
     const card = document.createElement('div');
     card.className = 'app-card';
 
-    // Using innerHTML for the static structure; event listeners are attached
-    // via addEventListener below to avoid any XSS risk from sheet data.
     card.innerHTML = `
       <div class="card-header">
         <span class="card-date">${escHtml(app.date)}</span>
@@ -184,7 +216,6 @@
       })
     );
 
-    // Pre-select whatever status is already stored in the sheet for this row.
     let selectedStatus = app.status ? app.status.toUpperCase() : null;
     card.querySelectorAll('.status-btn').forEach(btn => {
       if (btn.dataset.status === selectedStatus) btn.classList.add('active');
@@ -196,8 +227,51 @@
     });
 
     card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, selectedStatus));
-
     return card;
+  }
+
+  // Simple card for Successful / Unsuccessful tabs — employer, job title, find button only.
+  function buildSimpleCard(app) {
+    const card = document.createElement('div');
+    card.className = 'app-card app-card--simple';
+    card.innerHTML = `
+      <div class="simple-employer" title="${escAttr(app.employer)}">${escHtml(app.employer)}</div>
+      <div class="simple-jobtitle" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</div>
+      <button class="find-btn">Find on page</button>
+    `;
+    card.querySelector('.find-btn').addEventListener('click', () => findOnPage(app.jobTitle));
+    return card;
+  }
+
+  // Searches the UC page text for the job title and scrolls to the first match.
+  // Excludes script/style nodes. Shadow DOM content is not traversed.
+  function findOnPage(jobTitle) {
+    const search = jobTitle.toLowerCase().trim();
+    if (!search) return;
+
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const tag = node.parentElement?.tagName;
+          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      }
+    );
+
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.textContent.toLowerCase().includes(search)) {
+        node.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('Found — scrolled to it');
+        return;
+      }
+    }
+    showToast(`"${jobTitle}" not found on this page`, true);
   }
 
   // ── 6. Auto-fill ────────────────────────────────────────────────────────
