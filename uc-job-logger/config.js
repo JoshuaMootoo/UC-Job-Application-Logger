@@ -12,7 +12,7 @@ const API_KEY = 'YOUR_API_KEY_HERE';
 // The name of the tab (bottom of the spreadsheet) that holds your applications.
 const SHEET_TAB = 'Sheet1';
 
-// How many of the most-recent rows to display in the panel.
+// Maximum number of applications to show per tab (Applied / Successful / Unsuccessful).
 const NUM_ROWS = 10;
 
 // ─── OAuth Setup (required for writing status back to the sheet) ────────────

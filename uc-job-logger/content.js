@@ -51,6 +51,11 @@
   const toggleBtn      = shadow.getElementById('panel-toggle');
   const refreshBtn     = shadow.getElementById('refresh-btn');
   const cardsContainer = shadow.getElementById('cards-container');
+  const tabBtns        = shadow.querySelectorAll('.tab-btn');
+
+  // All fetched applications — shared across tab renders without re-fetching.
+  let allApps   = [];
+  let activeTab = 'APPLIED';
 
   // ── 3. Collapsed/expanded state ─────────────────────────────────────────
   const stored = await chrome.storage.local.get('panelCollapsed');
@@ -68,29 +73,42 @@
     chrome.storage.local.set({ panelCollapsed: nowCollapsed });
   });
 
-  // ── 4. Refresh ──────────────────────────────────────────────────────────
+  // ── 4. Tabs ─────────────────────────────────────────────────────────────
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTab = btn.dataset.tab;
+      renderCards();
+    });
+  });
+
+  // ── 5. Refresh ──────────────────────────────────────────────────────────
   refreshBtn.addEventListener('click', loadApplications);
 
-  // ── 5. Fetch & render ───────────────────────────────────────────────────
+  // ── 6. Fetch & render ───────────────────────────────────────────────────
   async function loadApplications() {
     cardsContainer.innerHTML = '<p class="status-msg">Loading…</p>';
     try {
-      const apps = await fetchRecentApplications();
-      renderCards(apps);
+      allApps = await fetchRecentApplications();
+      renderCards();
     } catch (err) {
       cardsContainer.innerHTML =
         `<p class="status-msg error">${escHtml(err.message)}</p>`;
     }
   }
 
-  function renderCards(apps) {
+  // Filters allApps by the active tab and renders up to NUM_ROWS cards.
+  function renderCards() {
     cardsContainer.innerHTML = '';
-    if (!apps.length) {
-      cardsContainer.innerHTML = '<p class="status-msg">No applications found.</p>';
+    const filtered = filterByTab(allApps, activeTab).slice(0, NUM_ROWS);
+    if (!filtered.length) {
+      const label = activeTab.charAt(0) + activeTab.slice(1).toLowerCase();
+      cardsContainer.innerHTML = `<p class="status-msg">No ${label} applications.</p>`;
       return;
     }
-    const matchIdx = findMatchingAppIndex(apps);
-    apps.forEach((app, i) => {
+    const matchIdx = findMatchingAppIndex(filtered);
+    filtered.forEach((app, i) => {
       const card = buildCard(app);
       if (i === matchIdx) {
         card.classList.add('card-matched');
@@ -100,8 +118,17 @@
     });
   }
 
+  // Applied tab shows jobs with status APPLIED or no status set yet.
+  function filterByTab(apps, tab) {
+    return apps.filter(app => {
+      const s = app.status.toUpperCase();
+      if (tab === 'APPLIED') return s === 'APPLIED' || s === '';
+      return s === tab;
+    });
+  }
+
   // Checks whether any UC form field already contains a value that matches an
-  // application in the sheet. Returns the index in apps[], or -1 if no match.
+  // application in the filtered list. Returns the index in apps[], or -1.
   function findMatchingAppIndex(apps) {
     const pageEmployer = (document.getElementById(SELECTORS.employer)?.value || '').trim().toLowerCase();
     const pageJobTitle = (document.getElementById(SELECTORS.jobTitle)?.value || '').trim().toLowerCase();
