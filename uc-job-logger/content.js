@@ -179,7 +179,7 @@
     return activeTab === 'APPLIED' ? buildFullCard(app) : buildSimpleCard(app);
   }
 
-  // Full card for the Applied tab — date, employer, job, URL, status picker, auto-fill.
+  // Full card for the Applied tab — date, employer, job title, auto-fill.
   function buildFullCard(app) {
     const card = document.createElement('div');
     card.className = 'app-card';
@@ -192,47 +192,15 @@
       <div class="card-row">
         <span class="card-label">Employer</span>
         <span class="card-value" title="${escAttr(app.employer)}">${escHtml(app.employer)}</span>
-        <button class="copy-btn" data-copy="${escAttr(app.employer)}"
-                title="Copy employer name">Copy</button>
       </div>
       <div class="card-row">
         <span class="card-label">Job</span>
         <span class="card-value" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</span>
-        <button class="copy-btn" data-copy="${escAttr(app.jobTitle)}"
-                title="Copy job title">Copy</button>
-      </div>
-      <div class="card-row">
-        <span class="card-label">URL</span>
-        <span class="card-value" title="${escAttr(app.jobUrl)}">${escHtml(app.jobUrl)}</span>
-        <button class="copy-btn" data-copy="${escAttr(app.jobUrl)}"
-                title="Copy job URL (for the Notes field)">Copy</button>
-      </div>
-      <div class="status-row">
-        <button class="status-btn" data-status="APPLIED">Applied</button>
-        <button class="status-btn" data-status="SUCCESSFUL">Successful</button>
-        <button class="status-btn" data-status="UNSUCCESSFUL">Unsuccessful</button>
       </div>
       <button class="autofill-btn">Auto-fill form</button>
     `;
 
-    card.querySelectorAll('.copy-btn').forEach(btn =>
-      btn.addEventListener('click', () => {
-        copyText(btn.dataset.copy);
-        showToast('Copied to clipboard');
-      })
-    );
-
-    let selectedStatus = app.status ? app.status.toUpperCase() : null;
-    card.querySelectorAll('.status-btn').forEach(btn => {
-      if (btn.dataset.status === selectedStatus) btn.classList.add('active');
-      btn.addEventListener('click', () => {
-        card.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedStatus = btn.dataset.status;
-      });
-    });
-
-    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, selectedStatus));
+    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, null));
     return card;
   }
 
