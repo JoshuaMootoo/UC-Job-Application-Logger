@@ -23,8 +23,10 @@
   host.id = 'uc-job-logger-host';
   Object.assign(host.style, {
     position:   'fixed',
-    bottom:     '20px',
-    right:      '20px',
+    top:        '0',
+    bottom:     '0',
+    right:      '0',
+    width:      '310px',
     zIndex:     '2147483647',
     lineHeight: 'initial',
     fontFamily: 'initial',
