@@ -1,5 +1,5 @@
 // ─── Google Sheets API Helper ──────────────────────────────────────────────
-// Fetches the last NUM_ROWS data rows from the configured Google Sheet,
+// Fetches all data rows from the configured Google Sheet (most-recent-first),
 // and provides a function to write a status value back to column F.
 // Depends on: SHEET_ID, API_KEY, SHEET_TAB, NUM_ROWS (all from config.js).
 //
@@ -27,13 +27,13 @@ async function fetchRecentApplications() {
   const data = await response.json();
   const rows = data.values || [];
 
-  // Attach the 1-based sheet row number to each data row before slicing,
-  // so we know exactly which row to update when writing status back.
+  // Attach the 1-based sheet row number before reversing so we know exactly
+  // which row to update when writing status back.
   // Row 1 is the header, so data rows begin at sheet row 2.
   const dataRows = rows.slice(1).map((row, i) => ({ row, sheetRow: i + 2 }));
-  const recent   = dataRows.slice(-NUM_ROWS).reverse();
 
-  return recent.map(({ row, sheetRow }) => ({
+  // Return all rows most-recent-first; tab rendering caps each tab at NUM_ROWS.
+  return dataRows.reverse().map(({ row, sheetRow }) => ({
     sheetRow,
     date:     (row[0] || '').trim(),  // A: DD/MM/YYYY
     employer: (row[1] || '').trim(),  // B: Employer or Agency
