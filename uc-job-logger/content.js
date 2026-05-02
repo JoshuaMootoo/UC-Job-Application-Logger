@@ -62,8 +62,13 @@
   let activeTab = 'APPLIED';
 
   // ── 3. Collapsed/expanded state ─────────────────────────────────────────
-  const stored = await chrome.storage.local.get('panelCollapsed');
+  const stored = await chrome.storage.local.get(['panelCollapsed', 'activeTab']);
   applyCollapsed(!!stored.panelCollapsed);
+  if (stored.activeTab) {
+    activeTab = stored.activeTab;
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === activeTab));
+    updateUniversalBar();
+  }
 
   function applyCollapsed(shouldCollapse) {
     panelBody.classList.toggle('hidden', shouldCollapse);
@@ -83,6 +88,7 @@
       tabBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       activeTab = btn.dataset.tab;
+      chrome.storage.local.set({ activeTab });
       updateUniversalBar();
       renderCards();
     });
