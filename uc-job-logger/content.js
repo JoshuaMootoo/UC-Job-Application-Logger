@@ -200,7 +200,7 @@
       <button class="autofill-btn">Auto-fill form</button>
     `;
 
-    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, null));
+    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, 'APPLIED'));
     return card;
   }
 
