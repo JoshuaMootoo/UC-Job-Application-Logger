@@ -213,39 +213,42 @@
       <div class="simple-jobtitle" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</div>
       <button class="find-btn">Find on page</button>
     `;
-    card.querySelector('.find-btn').addEventListener('click', () => findOnPage(app.jobTitle));
+    card.querySelector('.find-btn').addEventListener('click', () => findOnPage(app.jobTitle, app.employer));
     return card;
   }
 
-  // Searches the UC page text for the job title and scrolls to the first match.
-  // Excludes script/style nodes. Shadow DOM content is not traversed.
-  function findOnPage(jobTitle) {
-    const search = jobTitle.toLowerCase().trim();
-    if (!search) return;
+  // Finds the matching job listing on the UC page using the "JOB TITLE - COMPANY"
+  // heading format, then auto-clicks its Update job link.
+  function findOnPage(jobTitle, employer) {
+    const norm     = s => s.toLowerCase().trim();
+    const title    = norm(jobTitle);
+    const company  = norm(employer);
+    const combined = `${title} - ${company}`;
 
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode(node) {
-          const tag = node.parentElement?.tagName;
-          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          return NodeFilter.FILTER_ACCEPT;
-        },
-      }
-    );
-
-    let node;
-    while ((node = walker.nextNode())) {
-      if (node.textContent.toLowerCase().includes(search)) {
-        node.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('Found — scrolled to it');
-        return;
-      }
+    // Score each h3.job-list__item-heading: prefer the combined match, fall back
+    // to title-only if no combined match exists.
+    const headings = Array.from(document.querySelectorAll('h3.job-list__item-heading'));
+    let matched = headings.find(h => norm(h.textContent).includes(combined));
+    if (!matched) {
+      matched = headings.find(h => norm(h.textContent).includes(title));
     }
-    showToast(`"${jobTitle}" not found on this page`, true);
+
+    if (!matched) {
+      showToast(`"${jobTitle}" not found on this page`, true);
+      return;
+    }
+
+    const li         = matched.closest('li.job-list__item');
+    const updateLink = li?.querySelector('a.job-list__item-link');
+
+    if (updateLink) {
+      updateLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateLink.click();
+      showToast('Found — opening Update job');
+    } else {
+      matched.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast('Found — no Update job link on this listing', true);
+    }
   }
 
   // ── 6. Auto-fill ────────────────────────────────────────────────────────
