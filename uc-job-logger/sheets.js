@@ -1,6 +1,6 @@
 // ─── Google Sheets API Helper ──────────────────────────────────────────────
 // Fetches all data rows from the configured Google Sheet (most-recent-first),
-// and provides a function to write a status value back to column F.
+// and provides functions to write values back to individual cells.
 // Depends on: SHEET_ID, API_KEY, SHEET_TAB, NUM_ROWS (all from config.js).
 //
 // Sheet column layout expected:
@@ -9,11 +9,12 @@
 //   C – Job Title
 //   D – Job URL  (used as the Notes value on the UC form)
 //   E – Application Method (display only, not submitted to UC)
-//   F – Status   (APPLIED / SUCCESSFUL / UNSUCCESSFUL — written by this extension)
+//   F – Status          (APPLIED / SUCCESSFUL / UNSUCCESSFUL — written by extension)
+//   G – Added To UC Site  (TRUE when the entry has been auto-filled and submitted)
 
 async function fetchRecentApplications() {
-  // Fetch all rows from columns A–F (row 1 is the header).
-  const range = encodeURIComponent(`${SHEET_TAB}!A:F`);
+  // Fetch all rows from columns A–G (row 1 is the header).
+  const range = encodeURIComponent(`${SHEET_TAB}!A:G`);
   const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
                 `?key=${API_KEY}&majorDimension=ROWS`;
 
@@ -28,37 +29,37 @@ async function fetchRecentApplications() {
   const rows = data.values || [];
 
   // Attach the 1-based sheet row number before reversing so we know exactly
-  // which row to update when writing status back.
+  // which row to update when writing back.
   // Row 1 is the header, so data rows begin at sheet row 2.
   const dataRows = rows.slice(1).map((row, i) => ({ row, sheetRow: i + 2 }));
 
   // Return all rows most-recent-first; tab rendering caps each tab at NUM_ROWS.
   return dataRows.reverse().map(({ row, sheetRow }) => ({
     sheetRow,
-    date:     (row[0] || '').trim(),  // A: DD/MM/YYYY
-    employer: (row[1] || '').trim(),  // B: Employer or Agency
-    jobTitle: (row[2] || '').trim(),  // C: Job Title
-    jobUrl:   (row[3] || '').trim(),  // D: Job URL → Notes field
-    method:   (row[4] || '').trim(),  // E: Method (display only)
-    status:   (row[5] || '').trim(),  // F: Status (written back by extension)
+    date:       (row[0] || '').trim(),  // A: DD/MM/YYYY
+    employer:   (row[1] || '').trim(),  // B: Employer or Agency
+    jobTitle:   (row[2] || '').trim(),  // C: Job Title
+    jobUrl:     (row[3] || '').trim(),  // D: Job URL → Notes field
+    method:     (row[4] || '').trim(),  // E: Method (display only)
+    status:     (row[5] || '').trim(),  // F: Status
+    addedToUC:  (row[6] || '').trim(),  // G: Added To UC Site
   }));
 }
 
-// Writes a status string to column F of the given sheet row.
-// Uses chrome.identity.getAuthToken for OAuth so the sheet doesn't need to
-// be publicly writable — the user's Google account is used instead.
-async function updateApplicationStatus(sheetRow, status) {
-  const token = await new Promise((resolve, reject) => {
+// ── Shared OAuth token helper ────────────────────────────────────────────────
+function getAuthToken() {
+  return new Promise((resolve, reject) => {
     chrome.identity.getAuthToken({ interactive: true }, t => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-      } else {
-        resolve(t);
-      }
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+      else resolve(t);
     });
   });
+}
 
-  const range = encodeURIComponent(`${SHEET_TAB}!F${sheetRow}`);
+// ── Generic single-cell writer ───────────────────────────────────────────────
+async function writeCell(sheetRow, column, value) {
+  const token = await getAuthToken();
+  const range = encodeURIComponent(`${SHEET_TAB}!${column}${sheetRow}`);
   const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
                 `?valueInputOption=RAW`;
 
@@ -68,11 +69,21 @@ async function updateApplicationStatus(sheetRow, status) {
       'Authorization': `Bearer ${token}`,
       'Content-Type':  'application/json',
     },
-    body: JSON.stringify({ values: [[status]] }),
+    body: JSON.stringify({ values: [[value]] }),
   });
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Sheets write failed ${res.status}: ${body || res.statusText}`);
   }
+}
+
+// Writes the status string (APPLIED / SUCCESSFUL / UNSUCCESSFUL) to column F.
+function updateApplicationStatus(sheetRow, status) {
+  return writeCell(sheetRow, 'F', status);
+}
+
+// Sets column G ("Added To UC Site") to TRUE for the given row.
+function markAddedToUC(sheetRow) {
+  return writeCell(sheetRow, 'G', true);
 }

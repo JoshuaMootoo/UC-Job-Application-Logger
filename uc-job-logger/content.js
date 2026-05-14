@@ -283,6 +283,10 @@
       const submitBtn = document.getElementById('id-submit-button');
       if (submitBtn) {
         submitBtn.click();
+        if (app.sheetRow) {
+          markAddedToUC(app.sheetRow)
+            .catch(err => showToast(`UC flag failed: ${err.message}`, true));
+        }
       } else {
         showToast('Submit button not found on this page', true);
       }
