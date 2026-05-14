@@ -277,6 +277,16 @@
         .then(() => showToast('Status saved to sheet'))
         .catch(err => showToast(`Sheet update failed: ${err.message}`, true));
     }
+
+    // Give the page's validation JS a moment to react, then submit the form.
+    setTimeout(() => {
+      const submitBtn = document.getElementById('id-submit-button');
+      if (submitBtn) {
+        submitBtn.click();
+      } else {
+        showToast('Submit button not found on this page', true);
+      }
+    }, 300);
   }
 
   // Checks the job-status radio button on the UC page (Applied/Successful/Unsuccessful).
