@@ -134,16 +134,39 @@
   }
 
   // Filters allApps by the active tab and renders up to NUM_ROWS cards.
+  // The Applied tab is split into two sections: jobs not yet added to UC,
+  // and jobs that have been submitted (column G = TRUE).
   function renderCards() {
     cardsContainer.innerHTML = '';
-    const filtered = filterByTab(allApps, activeTab).slice(0, NUM_ROWS);
-    if (!filtered.length) {
+    const filtered = filterByTab(allApps, activeTab);
+
+    if (activeTab === 'APPLIED') {
+      const toAdd = filtered.filter(a => a.addedToUC.toUpperCase() !== 'TRUE').slice(0, NUM_ROWS);
+      const added = filtered.filter(a => a.addedToUC.toUpperCase() === 'TRUE').slice(0, NUM_ROWS);
+
+      if (!toAdd.length && !added.length) {
+        cardsContainer.innerHTML = '<p class="status-msg">No applied applications.</p>';
+        return;
+      }
+      if (toAdd.length) {
+        cardsContainer.appendChild(makeSectionHeader('To Add'));
+        toAdd.forEach(app => cardsContainer.appendChild(buildFullCard(app)));
+      }
+      if (added.length) {
+        cardsContainer.appendChild(makeSectionHeader('Added to UC Site'));
+        added.forEach(app => cardsContainer.appendChild(buildAddedCard(app)));
+      }
+      return;
+    }
+
+    const paged = filtered.slice(0, NUM_ROWS);
+    if (!paged.length) {
       const label = activeTab.charAt(0) + activeTab.slice(1).toLowerCase();
       cardsContainer.innerHTML = `<p class="status-msg">No ${label} applications.</p>`;
       return;
     }
-    const matchIdx = findMatchingAppIndex(filtered);
-    filtered.forEach((app, i) => {
+    const matchIdx = findMatchingAppIndex(paged);
+    paged.forEach((app, i) => {
       const card = buildCard(app);
       if (i === matchIdx) {
         card.classList.add('card-matched');
@@ -151,6 +174,13 @@
       }
       cardsContainer.appendChild(card);
     });
+  }
+
+  function makeSectionHeader(text) {
+    const el = document.createElement('div');
+    el.className = 'section-header';
+    el.textContent = text;
+    return el;
   }
 
   // Applied tab shows jobs with status APPLIED or no status set yet.
@@ -214,6 +244,34 @@
       <button class="find-btn">Find on page</button>
     `;
     card.querySelector('.find-btn').addEventListener('click', () => findOnPage(app.jobTitle, app.employer));
+    return card;
+  }
+
+  // Card for jobs already added to the UC site — lets the user mark the outcome.
+  function buildAddedCard(app) {
+    const card = document.createElement('div');
+    card.className = 'app-card app-card--added';
+    card.innerHTML = `
+      <div class="simple-employer" title="${escAttr(app.employer)}">${escHtml(app.employer)}</div>
+      <div class="simple-jobtitle" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</div>
+      <div class="added-status-row">
+        <button class="added-status-btn added-status-btn--unsuccessful">Unsuccessful</button>
+        <button class="added-status-btn added-status-btn--successful">Successful</button>
+      </div>
+    `;
+
+    card.querySelector('.added-status-btn--unsuccessful').addEventListener('click', () => {
+      updateApplicationStatus(app.sheetRow, 'UNSUCCESSFUL')
+        .then(() => { showToast('Marked Unsuccessful'); loadApplications(); })
+        .catch(err => showToast(`Update failed: ${err.message}`, true));
+    });
+
+    card.querySelector('.added-status-btn--successful').addEventListener('click', () => {
+      updateApplicationStatus(app.sheetRow, 'SUCCESSFUL')
+        .then(() => { showToast('Marked Successful'); loadApplications(); })
+        .catch(err => showToast(`Update failed: ${err.message}`, true));
+    });
+
     return card;
   }
 
