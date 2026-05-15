@@ -262,14 +262,16 @@
 
     card.querySelector('.added-status-btn--unsuccessful').addEventListener('click', () => {
       updateApplicationStatus(app.sheetRow, 'Unsuccessful')
-        .then(() => { showToast('Marked Unsuccessful'); loadApplications(); })
-        .catch(err => showToast(`Update failed: ${err.message}`, true));
+        .then(() => showToast('Marked Unsuccessful'))
+        .catch(err => showToast(`Update failed: ${err.message}`, true))
+        .finally(() => loadApplications());
     });
 
     card.querySelector('.added-status-btn--successful').addEventListener('click', () => {
       updateApplicationStatus(app.sheetRow, 'Successful')
-        .then(() => { showToast('Marked Successful'); loadApplications(); })
-        .catch(err => showToast(`Update failed: ${err.message}`, true));
+        .then(() => showToast('Marked Successful'))
+        .catch(err => showToast(`Update failed: ${err.message}`, true))
+        .finally(() => loadApplications());
     });
 
     return card;
@@ -329,10 +331,10 @@
     }
     showToast(`Auto-filled ${filled} field${filled !== 1 ? 's' : ''}`);
 
-    // Write the status back to column F of the sheet row asynchronously.
+    // Write the status back to column F and reload the panel once done.
     if (status && app.sheetRow) {
       updateApplicationStatus(app.sheetRow, status)
-        .then(() => showToast('Status saved to sheet'))
+        .then(() => loadApplications())
         .catch(err => showToast(`Sheet update failed: ${err.message}`, true));
     }
 
@@ -343,6 +345,7 @@
         submitBtn.click();
         if (app.sheetRow) {
           markAddedToUC(app.sheetRow)
+            .then(() => loadApplications())
             .catch(err => showToast(`UC flag failed: ${err.message}`, true));
         }
       } else {
