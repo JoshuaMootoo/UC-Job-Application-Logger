@@ -9,6 +9,9 @@
     "client_id": "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/spreadsheets"]
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
     "*://*.universal-credit.service.gov.uk/*",
     "https://sheets.googleapis.com/*"
