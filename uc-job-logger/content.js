@@ -133,7 +133,7 @@
     }
   }
 
-  // Filters allApps by the active tab and renders up to NUM_ROWS cards.
+  // Filters allApps by the active tab and renders all matching cards.
   // The Applied tab is split into two sections: jobs not yet added to UC,
   // and jobs that have been submitted (column G = TRUE).
   function renderCards() {
@@ -141,8 +141,8 @@
     const filtered = filterByTab(allApps, activeTab);
 
     if (activeTab === 'APPLIED') {
-      const toAdd = filtered.filter(a => a.addedToUC.toUpperCase() !== 'TRUE').slice(0, NUM_ROWS);
-      const added = filtered.filter(a => a.addedToUC.toUpperCase() === 'TRUE').slice(0, NUM_ROWS);
+      const toAdd = filtered.filter(a => a.addedToUC.toUpperCase() !== 'TRUE');
+      const added = filtered.filter(a => a.addedToUC.toUpperCase() === 'TRUE');
 
       if (!toAdd.length && !added.length) {
         cardsContainer.innerHTML = '<p class="status-msg">No applied applications.</p>';
@@ -159,19 +159,19 @@
       return;
     }
 
-    const paged = filtered.slice(0, NUM_ROWS);
-    if (!paged.length) {
+    if (!filtered.length) {
       const label = activeTab.charAt(0) + activeTab.slice(1).toLowerCase();
       cardsContainer.innerHTML = `<p class="status-msg">No ${label} applications.</p>`;
       return;
     }
-    const matchIdx = findMatchingAppIndex(paged);
-    paged.forEach((app, i) => {
+    const matchIdx = findMatchingAppIndex(filtered);
+    filtered.forEach((app, i) => {
       const card = buildCard(app);
       if (i === matchIdx) {
         card.classList.add('card-matched');
         setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
       }
+
       cardsContainer.appendChild(card);
     });
   }
