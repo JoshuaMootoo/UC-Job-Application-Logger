@@ -33,17 +33,18 @@ async function fetchRecentApplications() {
   // Row 1 is the header, so data rows begin at sheet row 2.
   const dataRows = rows.slice(1).map((row, i) => ({ row, sheetRow: i + 2 }));
 
-  // Return all rows most-recent-first; tab rendering caps each tab at NUM_ROWS.
+  // Return all rows most-recent-first; skip rows with no employer and no job
+  // title (blank sheet rows that would otherwise render as empty cards).
   return dataRows.reverse().map(({ row, sheetRow }) => ({
     sheetRow,
-    date:       (row[0] || '').trim(),  // A: DD/MM/YYYY
-    employer:   (row[1] || '').trim(),  // B: Employer or Agency
-    jobTitle:   (row[2] || '').trim(),  // C: Job Title
-    jobUrl:     (row[3] || '').trim(),  // D: Job URL → Notes field
-    method:     (row[4] || '').trim(),  // E: Method (display only)
-    status:     (row[5] || '').trim(),  // F: Status
-    addedToUC:  (row[6] || '').trim(),  // G: Added To UC Site
-  }));
+    date:      (row[0] || '').trim(),  // A: DD/MM/YYYY
+    employer:  (row[1] || '').trim(),  // B: Employer or Agency
+    jobTitle:  (row[2] || '').trim(),  // C: Job Title
+    jobUrl:    (row[3] || '').trim(),  // D: Job URL → Notes field
+    method:    (row[4] || '').trim(),  // E: Method (display only)
+    status:    (row[5] || '').trim(),  // F: Status
+    addedToUC: (row[6] || '').trim(),  // G: Added To UC Site
+  })).filter(app => app.employer || app.jobTitle);
 }
 
 // ── Shared OAuth token helper ────────────────────────────────────────────────
