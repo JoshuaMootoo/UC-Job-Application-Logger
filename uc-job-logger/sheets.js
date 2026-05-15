@@ -47,36 +47,25 @@ async function fetchRecentApplications() {
   })).filter(app => app.employer || app.jobTitle);
 }
 
-// ── Shared OAuth token helper ────────────────────────────────────────────────
-function getAuthToken() {
-  return new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, t => {
-      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-      else resolve(t);
-    });
-  });
-}
-
 // ── Generic single-cell writer ───────────────────────────────────────────────
-async function writeCell(sheetRow, column, value) {
-  const token = await getAuthToken();
-  const range = encodeURIComponent(`${SHEET_TAB}!${column}${sheetRow}`);
-  const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
-                `?valueInputOption=RAW`;
-
-  const res = await fetch(url, {
-    method:  'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({ values: [[value]] }),
+// Delegates to the background service worker, which POSTs to the Apps Script
+// web app. Background is used because content scripts cannot make cross-origin
+// fetch requests.
+function writeCell(sheetRow, column, value) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { action: 'writeCell', appsScriptUrl: APPS_SCRIPT_URL, sheetTab: SHEET_TAB, sheetRow, column, value },
+      response => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (response?.error) {
+          reject(new Error(response.error));
+        } else {
+          resolve();
+        }
+      }
+    );
   });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Sheets write failed ${res.status}: ${body || res.statusText}`);
-  }
 }
 
 // Writes the status string (APPLIED / SUCCESSFUL / UNSUCCESSFUL) to column F.

@@ -4,14 +4,15 @@
   "version": "1.0.0",
   "description": "Quickly log job applications to your Universal Credit journal from a Google Sheet.",
 
-  "permissions": ["storage", "identity"],
-  "oauth2": {
-    "client_id": "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/spreadsheets"]
+  "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js"
   },
   "host_permissions": [
     "*://*.universal-credit.service.gov.uk/*",
-    "https://sheets.googleapis.com/*"
+    "https://sheets.googleapis.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
   ],
 
   "content_scripts": [

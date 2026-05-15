@@ -1,6 +1,5 @@
 // ─── Extension Configuration ───────────────────────────────────────────────
 // Replace the placeholder values below before loading the extension.
-// See README.md → "Setup" for step-by-step instructions.
 
 // The long ID string found in your Google Sheet URL:
 // https://docs.google.com/spreadsheets/d/THIS_PART_HERE/edit
@@ -12,12 +11,16 @@ const API_KEY = 'YOUR_API_KEY_HERE';
 // The name of the tab (bottom of the spreadsheet) that holds your applications.
 const SHEET_TAB = 'Sheet1';
 
-// Maximum number of applications to show per tab (Applied / Successful / Unsuccessful).
-const NUM_ROWS = 10;
-
-// ─── OAuth Setup (required for writing status back to the sheet) ────────────
-// 1. Go to console.cloud.google.com → APIs & Services → Credentials
-// 2. Create an OAuth 2.0 Client ID → Application type: Chrome Extension
-// 3. Enter your extension's ID (found at chrome://extensions after loading it)
-// 4. Copy the generated client_id into manifest.json → "oauth2" → "client_id"
-// No changes needed in this file for OAuth — it's configured in manifest.json.
+// ─── Apps Script Web App URL (required for writing back to the sheet) ────────
+// This lets the extension update columns F and G without complex OAuth setup.
+//
+// One-time setup (takes about 2 minutes):
+// 1. Open your Google Sheet → Extensions → Apps Script
+// 2. Delete any existing code and paste in the contents of apps-script.js
+//    (found in this repo alongside this file)
+// 3. Click Deploy → New deployment
+//    - Type: Web app
+//    - Execute as: Me
+//    - Who has access: Anyone
+// 4. Click Deploy, approve the permissions, then copy the Web app URL below.
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
