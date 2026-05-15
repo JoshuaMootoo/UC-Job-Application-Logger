@@ -230,7 +230,7 @@
       <button class="autofill-btn">Auto-fill form</button>
     `;
 
-    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, 'APPLIED'));
+    card.querySelector('.autofill-btn').addEventListener('click', () => autoFill(app, 'Applied'));
     return card;
   }
 
@@ -261,13 +261,13 @@
     `;
 
     card.querySelector('.added-status-btn--unsuccessful').addEventListener('click', () => {
-      updateApplicationStatus(app.sheetRow, 'UNSUCCESSFUL')
+      updateApplicationStatus(app.sheetRow, 'Unsuccessful')
         .then(() => { showToast('Marked Unsuccessful'); loadApplications(); })
         .catch(err => showToast(`Update failed: ${err.message}`, true));
     });
 
     card.querySelector('.added-status-btn--successful').addEventListener('click', () => {
-      updateApplicationStatus(app.sheetRow, 'SUCCESSFUL')
+      updateApplicationStatus(app.sheetRow, 'Successful')
         .then(() => { showToast('Marked Successful'); loadApplications(); })
         .catch(err => showToast(`Update failed: ${err.message}`, true));
     });
@@ -354,7 +354,7 @@
   // Checks the job-status radio button on the UC page (Applied/Successful/Unsuccessful).
   function setStatus(status) {
     if (!status) return 0;
-    const radio = document.getElementById(`clickable-${status}`);
+    const radio = document.getElementById(`clickable-${status.toUpperCase()}`);
     if (!radio) return 0;
     radio.checked = true;
     radio.dispatchEvent(new Event('change', { bubbles: true }));
