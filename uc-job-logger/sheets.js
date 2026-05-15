@@ -48,12 +48,13 @@ async function fetchRecentApplications() {
 }
 
 // ── Generic single-cell writer ───────────────────────────────────────────────
-// Delegates to the background service worker because chrome.identity (OAuth)
-// is not available in content scripts.
+// Delegates to the background service worker, which POSTs to the Apps Script
+// web app. Background is used because content scripts cannot make cross-origin
+// fetch requests.
 function writeCell(sheetRow, column, value) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
-      { action: 'writeCell', sheetId: SHEET_ID, sheetTab: SHEET_TAB, sheetRow, column, value },
+      { action: 'writeCell', appsScriptUrl: APPS_SCRIPT_URL, sheetTab: SHEET_TAB, sheetRow, column, value },
       response => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));

@@ -1,42 +1,33 @@
 // ─── Background Service Worker ──────────────────────────────────────────────
-// Content scripts cannot use chrome.identity, so all OAuth token fetching and
-// Google Sheets write requests are handled here instead.
-//
-// Listens for { action: 'writeCell', sheetId, sheetTab, sheetRow, column, value }
-// messages from the content script and writes the value to the specified cell.
+// Receives writeCell messages from the content script and POSTs them to the
+// Google Apps Script web app, which updates the sheet. The background worker
+// is used because content scripts cannot make cross-origin fetch requests.
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === 'writeCell') {
-    writeCell(message)
+    postToAppsScript(message)
       .then(() => sendResponse({ ok: true }))
       .catch(err => sendResponse({ error: err.message }));
-    return true; // keeps the message channel open for the async response
+    return true; // keeps the channel open for the async response
   }
 });
 
-async function writeCell({ sheetId, sheetTab, sheetRow, column, value }) {
-  const token = await new Promise((resolve, reject) => {
-    chrome.identity.getAuthToken({ interactive: true }, t => {
-      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-      else resolve(t);
-    });
-  });
+async function postToAppsScript({ appsScriptUrl, sheetTab, sheetRow, column, value }) {
+  if (!appsScriptUrl || appsScriptUrl === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    throw new Error('APPS_SCRIPT_URL not configured in config.js');
+  }
 
-  const range = encodeURIComponent(`${sheetTab}!${column}${sheetRow}`);
-  const url   = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}` +
-                `?valueInputOption=RAW`;
-
-  const res = await fetch(url, {
-    method:  'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({ values: [[value]] }),
+  const res = await fetch(appsScriptUrl, {
+    method:   'POST',
+    redirect: 'follow', // Apps Script web apps redirect to script.googleusercontent.com
+    headers:  { 'Content-Type': 'application/json' },
+    body:     JSON.stringify({ sheetTab, sheetRow, column, value }),
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Sheets write failed ${res.status}: ${body || res.statusText}`);
+    throw new Error(`Apps Script responded ${res.status}`);
   }
+
+  const json = await res.json().catch(() => ({}));
+  if (json.error) throw new Error(json.error);
 }
