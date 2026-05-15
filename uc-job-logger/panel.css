@@ -120,6 +120,31 @@
   border-bottom-color: #6ee7b7;
 }
 
+/* ── Search bar (Applied tab) ────────────────────────────────────────────── */
+.search-bar {
+  padding: 8px 8px 0;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: #1a1a2e;
+  border: 1px solid #3a3a58;
+  border-radius: 5px;
+  color: #c9d1e0;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input::placeholder {
+  color: #555870;
+}
+
+.search-input:focus {
+  border-color: #a78bfa;
+}
+
 /* ── Universal status button ─────────────────────────────────────────────── */
 .universal-bar {
   padding: 8px 8px 0;
@@ -207,13 +232,26 @@
   color: #60a5fa;
 }
 
-.card-method {
+.card-employer-badge {
   font-size: 10px;
   padding: 2px 7px;
-  background: #1e3a2e;
-  color: #6ee7b7;
+  background: #1a2a3f;
+  color: #60a5fa;
   border-radius: 99px;
   font-weight: 500;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-job {
+  font-size: 12px;
+  color: #c9d1e0;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Data rows inside a card (label + value + copy button) */

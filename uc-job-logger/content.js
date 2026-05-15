@@ -56,10 +56,13 @@
   const tabBtns         = shadow.querySelectorAll('.tab-btn');
   const universalBar    = shadow.getElementById('universal-bar');
   const universalSetBtn = shadow.getElementById('universal-set-btn');
+  const searchBar       = shadow.getElementById('search-bar');
+  const searchInput     = shadow.getElementById('search-input');
 
   // All fetched applications — shared across tab renders without re-fetching.
-  let allApps   = [];
-  let activeTab = 'APPLIED';
+  let allApps     = [];
+  let activeTab   = 'APPLIED';
+  let searchQuery = '';
 
   // ── 3. Collapsed/expanded state ─────────────────────────────────────────
   const stored = await chrome.storage.local.get(['panelCollapsed', 'activeTab']);
@@ -67,7 +70,7 @@
   if (stored.activeTab) {
     activeTab = stored.activeTab;
     tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === activeTab));
-    updateUniversalBar();
+    updateTabUI();
   }
 
   function applyCollapsed(shouldCollapse) {
@@ -82,27 +85,37 @@
     chrome.storage.local.set({ panelCollapsed: nowCollapsed });
   });
 
-  // ── 4. Tabs & universal button ──────────────────────────────────────────
+  // ── 4. Tabs, search & universal button ─────────────────────────────────
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      activeTab = btn.dataset.tab;
+      activeTab   = btn.dataset.tab;
+      searchQuery = '';
+      searchInput.value = '';
       chrome.storage.local.set({ activeTab });
-      updateUniversalBar();
+      updateTabUI();
       renderCards();
     });
   });
 
-  function updateUniversalBar() {
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.toLowerCase().trim();
+    renderCards();
+  });
+
+  // Shows the search bar on Applied, the universal button on other tabs.
+  function updateTabUI() {
     if (activeTab === 'APPLIED') {
+      searchBar.classList.remove('hidden');
       universalBar.classList.add('hidden');
-      return;
+    } else {
+      searchBar.classList.add('hidden');
+      universalBar.classList.remove('hidden');
+      const label = activeTab === 'SUCCESSFUL' ? 'Successful' : 'Unsuccessful';
+      universalSetBtn.textContent = `Set as ${label} on this page`;
+      universalSetBtn.dataset.tab = activeTab;
     }
-    universalBar.classList.remove('hidden');
-    const label = activeTab === 'SUCCESSFUL' ? 'Successful' : 'Unsuccessful';
-    universalSetBtn.textContent  = `Set as ${label} on this page`;
-    universalSetBtn.dataset.tab  = activeTab;
   }
 
   // Clicks the matching radio on the UC page for the current tab's status.
@@ -141,8 +154,8 @@
     const filtered = filterByTab(allApps, activeTab);
 
     if (activeTab === 'APPLIED') {
-      const toAdd = filtered.filter(a => a.addedToUC.toUpperCase() !== 'TRUE');
-      const added = filtered.filter(a => a.addedToUC.toUpperCase() === 'TRUE');
+      const toAdd = applySearch(filtered.filter(a => a.addedToUC.toUpperCase() !== 'TRUE'));
+      const added = applySearch(filtered.filter(a => a.addedToUC.toUpperCase() === 'TRUE'));
 
       if (!toAdd.length && !added.length) {
         cardsContainer.innerHTML = '<p class="status-msg">No applied applications.</p>';
@@ -174,6 +187,14 @@
 
       cardsContainer.appendChild(card);
     });
+  }
+
+  function applySearch(apps) {
+    if (!searchQuery) return apps;
+    return apps.filter(app =>
+      app.employer.toLowerCase().includes(searchQuery) ||
+      app.jobTitle.toLowerCase().includes(searchQuery)
+    );
   }
 
   function makeSectionHeader(text) {
@@ -217,16 +238,9 @@
     card.innerHTML = `
       <div class="card-header">
         <span class="card-date">${escHtml(app.date)}</span>
-        <span class="card-method">${escHtml(app.method)}</span>
+        <span class="card-employer-badge" title="${escAttr(app.employer)}">${escHtml(app.employer)}</span>
       </div>
-      <div class="card-row">
-        <span class="card-label">Employer</span>
-        <span class="card-value" title="${escAttr(app.employer)}">${escHtml(app.employer)}</span>
-      </div>
-      <div class="card-row">
-        <span class="card-label">Job</span>
-        <span class="card-value" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</span>
-      </div>
+      <div class="card-job" title="${escAttr(app.jobTitle)}">${escHtml(app.jobTitle)}</div>
       <button class="autofill-btn">Auto-fill form</button>
     `;
 
