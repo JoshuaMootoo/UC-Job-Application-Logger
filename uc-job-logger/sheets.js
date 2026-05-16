@@ -8,14 +8,13 @@
 //   B – Employer or Agency
 //   C – Job Title
 //   D – Job URL  (used as the Notes value on the UC form)
-//   E – Application Method (display only, not submitted to UC)
-//   F – Status             (Applied / Successful / Unsuccessful — written by extension)
-//   G – Added To UC Site   (TRUE when the entry has been auto-filled and submitted)
-//   H – Outcome Updated    (TRUE when Unsuccessful/Successful has been set on the UC site)
+//   E – Status           (Applied / Successful / Unsuccessful — written by extension)
+//   F – Added To UC Site (TRUE when the entry has been auto-filled and submitted)
+//   G – Outcome Updated  (TRUE when Unsuccessful/Successful has been set on the UC site)
 
 async function fetchRecentApplications() {
-  // Fetch all rows from columns A–H (row 1 is the header).
-  const range = encodeURIComponent(`${SHEET_TAB}!A:H`);
+  // Fetch all rows from columns A–G (row 1 is the header).
+  const range = encodeURIComponent(`${SHEET_TAB}!A:G`);
   const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
                 `?key=${API_KEY}&majorDimension=ROWS`;
 
@@ -38,14 +37,13 @@ async function fetchRecentApplications() {
   // title (blank sheet rows that would otherwise render as empty cards).
   return dataRows.reverse().map(({ row, sheetRow }) => ({
     sheetRow,
-    date:      (row[0] || '').trim(),  // A: DD/MM/YYYY
-    employer:  (row[1] || '').trim(),  // B: Employer or Agency
-    jobTitle:  (row[2] || '').trim(),  // C: Job Title
-    jobUrl:    (row[3] || '').trim(),  // D: Job URL → Notes field
-    method:    (row[4] || '').trim(),  // E: Method (display only)
-    status:          (row[5] || '').trim(),  // F: Status
-    addedToUC:       (row[6] || '').trim(),  // G: Added To UC Site
-    outcomeUpdated:  (row[7] || '').trim(),  // H: Outcome Updated
+    date:           (row[0] || '').trim(),  // A: DD/MM/YYYY
+    employer:       (row[1] || '').trim(),  // B: Employer or Agency
+    jobTitle:       (row[2] || '').trim(),  // C: Job Title
+    jobUrl:         (row[3] || '').trim(),  // D: Job URL → Notes field
+    status:         (row[4] || '').trim(),  // E: Status
+    addedToUC:      (row[5] || '').trim(),  // F: Added To UC Site
+    outcomeUpdated: (row[6] || '').trim(),  // G: Outcome Updated
   })).filter(app => app.employer || app.jobTitle);
 }
 
@@ -70,18 +68,18 @@ function writeCell(sheetRow, column, value) {
   });
 }
 
-// Writes the status string (APPLIED / SUCCESSFUL / UNSUCCESSFUL) to column F.
+// Writes the status string (Applied / Successful / Unsuccessful) to column E.
 function updateApplicationStatus(sheetRow, status) {
-  return writeCell(sheetRow, 'F', status);
+  return writeCell(sheetRow, 'E', status);
 }
 
-// Sets column G ("Added To UC Site") to TRUE for the given row.
+// Sets column F ("Added To UC Site") to TRUE for the given row.
 function markAddedToUC(sheetRow) {
-  return writeCell(sheetRow, 'G', true);
+  return writeCell(sheetRow, 'F', true);
 }
 
-// Sets column H ("Outcome Updated") to TRUE once Unsuccessful/Successful
+// Sets column G ("Outcome Updated") to TRUE once Unsuccessful/Successful
 // has been submitted on the UC site.
 function markOutcomeUpdated(sheetRow) {
-  return writeCell(sheetRow, 'H', true);
+  return writeCell(sheetRow, 'G', true);
 }
