@@ -104,13 +104,12 @@
     renderCards();
   });
 
-  // Shows the search bar on Applied, the universal button on other tabs.
+  // Shows the search bar on all tabs; shows the universal button on non-Applied tabs.
   function updateTabUI() {
+    searchBar.classList.remove('hidden');
     if (activeTab === 'APPLIED') {
-      searchBar.classList.remove('hidden');
       universalBar.classList.add('hidden');
     } else {
-      searchBar.classList.add('hidden');
       universalBar.classList.remove('hidden');
       const label = activeTab === 'SUCCESSFUL' ? 'Successful' : 'Unsuccessful';
       universalSetBtn.textContent = `Set as ${label} on this page`;
@@ -118,7 +117,7 @@
     }
   }
 
-  // Clicks the matching radio on the UC page for the current tab's status.
+  // Sets the radio, submits the form, marks the matching job's column H, then reloads.
   universalSetBtn.addEventListener('click', () => {
     const radio = document.getElementById(`clickable-${activeTab}`);
     if (!radio) {
@@ -128,7 +127,22 @@
     radio.checked = true;
     radio.dispatchEvent(new Event('change', { bubbles: true }));
     radio.dispatchEvent(new Event('click',  { bubbles: true }));
-    showToast(`Set as ${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`);
+
+    setTimeout(() => {
+      const submitBtn = document.getElementById('id-submit-button');
+      if (submitBtn) {
+        submitBtn.click();
+        const tabApps = filterByTab(allApps, activeTab);
+        const idx     = findMatchingAppIndex(tabApps);
+        if (idx >= 0 && tabApps[idx].sheetRow) {
+          markOutcomeUpdated(tabApps[idx].sheetRow)
+            .then(() => loadApplications())
+            .catch(err => showToast(`Update failed: ${err.message}`, true));
+        }
+      } else {
+        showToast('Submit button not found on this page', true);
+      }
+    }, 300);
   });
 
   // ── 5. Refresh ──────────────────────────────────────────────────────────
@@ -172,21 +186,30 @@
       return;
     }
 
-    if (!filtered.length) {
+    const toUpdate = applySearch(filtered.filter(a => a.outcomeUpdated.toUpperCase() !== 'TRUE'));
+    const updated  = applySearch(filtered.filter(a => a.outcomeUpdated.toUpperCase() === 'TRUE'));
+
+    if (!toUpdate.length && !updated.length) {
       const label = activeTab.charAt(0) + activeTab.slice(1).toLowerCase();
       cardsContainer.innerHTML = `<p class="status-msg">No ${label} applications.</p>`;
       return;
     }
-    const matchIdx = findMatchingAppIndex(filtered);
-    filtered.forEach((app, i) => {
-      const card = buildCard(app);
-      if (i === matchIdx) {
-        card.classList.add('card-matched');
-        setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
-      }
-
-      cardsContainer.appendChild(card);
-    });
+    if (toUpdate.length) {
+      cardsContainer.appendChild(makeSectionHeader('To Update'));
+      const matchIdx = findMatchingAppIndex(toUpdate);
+      toUpdate.forEach((app, i) => {
+        const card = buildSimpleCard(app);
+        if (i === matchIdx) {
+          card.classList.add('card-matched');
+          setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+        }
+        cardsContainer.appendChild(card);
+      });
+    }
+    if (updated.length) {
+      cardsContainer.appendChild(makeSectionHeader('Updated on UC Site'));
+      updated.forEach(app => cardsContainer.appendChild(buildSimpleCard(app)));
+    }
   }
 
   function applySearch(apps) {

@@ -9,12 +9,13 @@
 //   C – Job Title
 //   D – Job URL  (used as the Notes value on the UC form)
 //   E – Application Method (display only, not submitted to UC)
-//   F – Status          (APPLIED / SUCCESSFUL / UNSUCCESSFUL — written by extension)
-//   G – Added To UC Site  (TRUE when the entry has been auto-filled and submitted)
+//   F – Status             (Applied / Successful / Unsuccessful — written by extension)
+//   G – Added To UC Site   (TRUE when the entry has been auto-filled and submitted)
+//   H – Outcome Updated    (TRUE when Unsuccessful/Successful has been set on the UC site)
 
 async function fetchRecentApplications() {
-  // Fetch all rows from columns A–G (row 1 is the header).
-  const range = encodeURIComponent(`${SHEET_TAB}!A:G`);
+  // Fetch all rows from columns A–H (row 1 is the header).
+  const range = encodeURIComponent(`${SHEET_TAB}!A:H`);
   const url   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
                 `?key=${API_KEY}&majorDimension=ROWS`;
 
@@ -42,8 +43,9 @@ async function fetchRecentApplications() {
     jobTitle:  (row[2] || '').trim(),  // C: Job Title
     jobUrl:    (row[3] || '').trim(),  // D: Job URL → Notes field
     method:    (row[4] || '').trim(),  // E: Method (display only)
-    status:    (row[5] || '').trim(),  // F: Status
-    addedToUC: (row[6] || '').trim(),  // G: Added To UC Site
+    status:          (row[5] || '').trim(),  // F: Status
+    addedToUC:       (row[6] || '').trim(),  // G: Added To UC Site
+    outcomeUpdated:  (row[7] || '').trim(),  // H: Outcome Updated
   })).filter(app => app.employer || app.jobTitle);
 }
 
@@ -76,4 +78,10 @@ function updateApplicationStatus(sheetRow, status) {
 // Sets column G ("Added To UC Site") to TRUE for the given row.
 function markAddedToUC(sheetRow) {
   return writeCell(sheetRow, 'G', true);
+}
+
+// Sets column H ("Outcome Updated") to TRUE once Unsuccessful/Successful
+// has been submitted on the UC site.
+function markOutcomeUpdated(sheetRow) {
+  return writeCell(sheetRow, 'H', true);
 }
