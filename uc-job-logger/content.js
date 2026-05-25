@@ -117,7 +117,7 @@
     }
   }
 
-  // Sets the radio, submits the form, marks the matching job's column H, then reloads.
+  // Sets the radio, marks the matching job's outcome updated, then submits the form.
   universalSetBtn.addEventListener('click', () => {
     const radio = document.getElementById(`clickable-${activeTab}`);
     if (!radio) {
@@ -128,20 +128,23 @@
     radio.dispatchEvent(new Event('change', { bubbles: true }));
     radio.dispatchEvent(new Event('click',  { bubbles: true }));
 
+    // Identify the matching app now, while the form fields still have values.
+    const tabApps = filterByTab(allApps, activeTab);
+    const idx     = findMatchingAppIndex(tabApps);
+
     setTimeout(() => {
       const submitBtn = document.getElementById('id-submit-button');
-      if (submitBtn) {
-        submitBtn.click();
-        const tabApps = filterByTab(allApps, activeTab);
-        const idx     = findMatchingAppIndex(tabApps);
-        if (idx >= 0 && tabApps[idx].sheetRow) {
-          markOutcomeUpdated(tabApps[idx].sheetRow)
-            .then(() => loadApplications())
-            .catch(err => showToast(`Update failed: ${err.message}`, true));
-        }
-      } else {
+      if (!submitBtn) {
         showToast('Submit button not found on this page', true);
+        return;
       }
+      // Write to the sheet before navigating; the background SW will complete
+      // the request even after the page unloads.
+      if (idx >= 0 && tabApps[idx].sheetRow) {
+        markOutcomeUpdated(tabApps[idx].sheetRow)
+          .catch(err => console.error(`Outcome update failed: ${err.message}`));
+      }
+      submitBtn.click();
     }, 300);
   });
 
@@ -376,18 +379,19 @@
     }
 
     // Give the page's validation JS a moment to react, then submit the form.
+    // Write addedToUC before clicking submit so the message reaches the
+    // background SW before the page navigates away.
     setTimeout(() => {
       const submitBtn = document.getElementById('id-submit-button');
-      if (submitBtn) {
-        submitBtn.click();
-        if (app.sheetRow) {
-          markAddedToUC(app.sheetRow)
-            .then(() => loadApplications())
-            .catch(err => showToast(`UC flag failed: ${err.message}`, true));
-        }
-      } else {
+      if (!submitBtn) {
         showToast('Submit button not found on this page', true);
+        return;
       }
+      if (app.sheetRow) {
+        markAddedToUC(app.sheetRow)
+          .catch(err => console.error(`UC flag failed: ${err.message}`));
+      }
+      submitBtn.click();
     }, 300);
   }
 
