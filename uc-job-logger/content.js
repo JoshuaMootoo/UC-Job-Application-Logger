@@ -362,7 +362,7 @@
     filled += setField(SELECTORS.dayInput,   day   || '');
     filled += setField(SELECTORS.monthInput, month || '');
     filled += setField(SELECTORS.yearInput,  year  || '');
-    filled += setField(SELECTORS.notes,      app.jobUrl);
+    filled += setField(SELECTORS.notes,      cleanUrl(app.jobUrl));
     filled += setStatus(status);
 
     if (filled === 0) {
@@ -456,7 +456,23 @@
     document.body.removeChild(ta);
   }
 
-  // ── 9. HTML-escaping helpers ─────────────────────────────────────────────
+  // ── 9. URL cleaner ───────────────────────────────────────────────────────
+  // Removes all utm_* tracking parameters from a URL before it is pasted
+  // into the UC form notes field.
+  function cleanUrl(url) {
+    try {
+      const u = new URL(url);
+      [...u.searchParams.keys()]
+        .filter(k => k.toLowerCase().startsWith('utm_'))
+        .forEach(k => u.searchParams.delete(k));
+      // Drop the trailing ? if no params remain
+      return u.toString();
+    } catch {
+      return url; // not a valid URL — return as-is
+    }
+  }
+
+  // ── 10. HTML-escaping helpers ─────────────────────────────────────────────
   // Used when building card innerHTML so sheet data cannot inject markup.
   function escHtml(s) {
     return String(s)
